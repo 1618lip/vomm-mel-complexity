@@ -8,7 +8,8 @@ Project sturcture:
 ```
 VOMM-MEL-COMPLEXITY
 │   README.md
-│   file001.txt    
+│   gui.py
+│   
 └───Paper_and_Conference_Slides
 │   │   Paper.pdf // Coming Soon
 │   │   Conference_Slides.pdf
@@ -23,6 +24,9 @@ VOMM-MEL-COMPLEXITY
 │       │   file112.txt
 │       │   ...
 │   
+└───examples
+│   │   ... // song names
+│   
 └───src
 │   │   midi_rep.py
 │   │   createdistribution.py
@@ -30,8 +34,6 @@ VOMM-MEL-COMPLEXITY
 │   │   sliding_window.py
 │   │   chord_parser.cpp
 │   │   chord_parser.exe
-│ 
-│   gui.py
 ```
 
 <h1>Details</h1>
