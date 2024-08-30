@@ -5,29 +5,33 @@ This repository is based on the paper *"Using Variable Order Markov Model in Mea
 
 
 Project sturcture:
-
 ```
-| Paper_and_Conference_Slides
-  | Paper.pdf
-  | Conference_Slides.pdf
-| LaTeX files   % ONLY REPO OWNER CAN ACCESS
-  | # HIDDEN
-| 
-| chord_parser.cpp
-| 
-| Harmony_Score_Approach
-  | Hscore_general.py
-|
-| Chroma_Key_Approach
-  | chroma.py
-|
-| Variable_Order_Markov_Model_Approach
-  | midi_rep.py
-  | createdistribution.py
-  | vomm_ppm.py
-  | sliding_window.py
-|
-| run.sh
+VOMM-MEL-COMPLEXITY
+│   README.md
+│   file001.txt    
+└───Paper_and_Conference_Slides
+│   │   Paper.pdf // Coming Soon
+│   │   Conference_Slides.pdf
+│
+└───Supplement
+│   └───Harmony_Score
+│       │   Hscore_general.py
+│       │   file112.txt
+│       │   ...
+│   └───Chroma_Vector
+│       │   chroma.py
+│       │   file112.txt
+│       │   ...
+│   
+└───src
+│   │   midi_rep.py
+│   │   createdistribution.py
+│   │   vomm_ppm.py
+│   │   sliding_window.py
+│   │   chord_parser.cpp
+│   │   chord_parser.exe
+│ 
+│   gui.py
 ```
 
 <h1>Details</h1>

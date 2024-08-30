@@ -1,0 +1,10 @@
+Metadata-Version: 2.1
+Name: vomm
+Version: 0.1
+Summary: Implements 2 algorithms for variable order markov models
+Home-page: https://github.com/rpgomez/vomm
+Author: Rod Gomez
+Author-email: armyofthe penguin@gmail.com
+License-File: LICENSE
+Requires-Dist: numpy
+Requires-Dist: scipy
