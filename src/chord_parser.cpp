@@ -1,28 +1,27 @@
-// Parse Chords from text file, whose contents are directly copy-pasted from WJazz
-// Made by Philip Pincencia
+// Parse Chords from text file, contents copied from WJazz
+// Author: Philip Pincencia
 // Last Updated: July 1st, 2024
+
 #include <iostream>
 #include <sstream>
 #include <fstream>
-
 #include <vector>
 #include <string>
 #include <unordered_map>
 #include <regex>
 
-
 using namespace std;
-auto changeNaming  = unordered_map<char, string>
-                            {
-                                {'-', "min"}, 
-                                {'j', "maj"},
-                                {'o', "dim"},
-                                {'+', "aug"}, 
-                                {'b', "-"},
-                                {'m', "min"}
-                                // TODO: add more naming conversion rules
-                            };
-// Trim whitespace from a string
+
+// Character-based chord naming conversion
+unordered_map<char, string> changeNaming {
+    {'-', "min"}, {'j', "maj"}, {'o', "dim"},
+    {'+', "aug"}, {'b', "-"}, {'m', "min"}
+    // TODO: Add more naming conversion rules
+};
+
+// --- Helper Functions --- //
+
+// Trim '|' characters from the edges
 string trim(const string& str) {
     size_t first = str.find_first_not_of('|');
     if (first == string::npos) return "";
@@ -30,9 +29,9 @@ string trim(const string& str) {
     return str.substr(first, last - first + 1);
 }
 
-// Split a string by a delimiter and return a vector of strings
+// Split string by delimiter
 vector<string> split(const string& str, char delimiter) {
-    vector<std::string> tokens;
+    vector<string> tokens;
     stringstream ss(str);
     string token;
     while (getline(ss, token, delimiter)) {
@@ -40,66 +39,49 @@ vector<string> split(const string& str, char delimiter) {
     }
     return tokens;
 }
-// Use regular expressions to identify and split chords
-vector<string> splitChords(const string& measure, bool withspace) {
-    vector<string> chords;
-    string rgx;
-    if (withspace) {
-        //rgx = R"(\s|([A-G](#|b)?(-|m|j|o|\+|sus|add)?([1-9])?((#|b)([1-9]|1[012]))?(\/[A-G](#|b)?)?))";
-        rgx = R"(\s|([A-G](#|b)?(-|m|j|o|\+|sus|add)?([1-9])?(\/[A-G](#|b)?)?))";
-    }
-    else {
-        //rgx = R"(([A-G](#|b)?(-|m|j|o|\+|sus|add)?([1-9])?((#|b)([1-9]|1[012]))?(\/[A-G](#|b)?)?))";
-        rgx = R"(([A-G](#|b)?(-|m|j|o|\+|sus|add)?([1-9])?(\/[A-G](#|b)?)?))";
-    }
-    regex chordRegex(rgx);
-    
-    sregex_iterator words_begin = sregex_iterator(measure.begin(), measure.end(), chordRegex);
-    sregex_iterator words_end = sregex_iterator();
 
-    for (sregex_iterator i = words_begin; i != words_end; i++) {
-        chords.push_back(i->str());
+// Extract chords using regex
+vector<string> splitChords(const string& measure, bool withSpace) {
+    string pattern = withSpace
+        ? R"(\s|([A-G](#|b)?(-|m|j|o|\+|sus|add)?([1-9])?(\/ [A-G](#|b)?)?))"
+        : R"(([A-G](#|b)?(-|m|j|o|\+|sus|add)?([1-9])?(\/ [A-G](#|b)?)?))";
+    regex chordRegex(pattern);
+
+    vector<string> chords;
+    for (auto it = sregex_iterator(measure.begin(), measure.end(), chordRegex);
+         it != sregex_iterator(); ++it) {
+        chords.push_back(it->str());
     }
     return chords;
 }
 
-// Parse measures into exactly 4 beats
+// Parse a measure into exactly 4 beats
 vector<string> parseMeasure(const string& measure) {
-    vector<string> chordswspace = splitChords(measure, true);
-    vector<string> beats(4, ""); // Initialize with 4 empty beats
+    vector<string> chordsWithSpace = splitChords(measure, true);
     vector<string> chords = splitChords(measure, false);
-    size_t numChords = chords.size();
-    if (numChords == 1) {
-        beats = { chords[0], chords[0], chords[0], chords[0] }; // Repeat the single chord
-    } else if (numChords == 2) {
-        beats = { chords[0], chords[0], chords[1], chords[1] }; // Two chords, each gets two beats
-    } else if (numChords == 3) {
-        // Handle the case with three chords and spaces
-        int spaceIndex = 0;
+    vector<string> beats(4, "");
+
+    size_t n = chords.size();
+    if (n == 1) beats = {chords[0], chords[0], chords[0], chords[0]};
+    else if (n == 2) beats = {chords[0], chords[0], chords[1], chords[1]};
+    else if (n == 3) {
+        int spaceIdx = 0;
         for (int i = 0; i < 4; i++) {
-            if (chordswspace[i] == " ") {
-                spaceIndex = i;
+            if (chordsWithSpace[i] == " ") {
+                spaceIdx = i;
                 break;
             }
         }
-        if (spaceIndex == 1) {
-            // First chord is held for two beats
-            beats = { chords[0], chords[0], chords[1], chords[2] };
-        } else if (spaceIndex == 2) {
-            // Second chord is held for two beats
-            beats = { chords[0], chords[1], chords[1], chords[2] };
-        } else if (spaceIndex == 3) {
-            // Third chord is held for two beats
-            beats = { chords[0], chords[1], chords[2], chords[2] };
-        } 
-    } else if (numChords == 4) {
-        beats = chords; // Four chords, each gets one beat
+        if (spaceIdx == 1) beats = {chords[0], chords[0], chords[1], chords[2]};
+        else if (spaceIdx == 2) beats = {chords[0], chords[1], chords[1], chords[2]};
+        else if (spaceIdx == 3) beats = {chords[0], chords[1], chords[2], chords[2]};
     }
+    else if (n == 4) beats = chords;
 
     return beats;
 }
 
-// Function to check if a measure is empty
+// Check if a measure is empty
 bool isEmptyMeasure(const vector<string>& measure) {
     for (const auto& beat : measure) {
         if (!beat.empty()) return false;
@@ -107,78 +89,57 @@ bool isEmptyMeasure(const vector<string>& measure) {
     return true;
 }
 
+// Apply chord naming conversion
 string changeChordNaming(const string& chord) {
-    string newName = "";
-    for (size_t i = 0; i < chord.size(); ++i) {
-        //cout << (chord[i]);
-        if (changeNaming.count(chord[i]) != 0) {
-            // Apply the mapping for the character (e.g., 'b' -> '-')
-            newName += changeNaming[chord[i]];
-
-            // // // Check if the next character is a digit, and if so, move it to after the replacement
-            // if (i + 1 < chord.length() && isdigit(chord[i + 1])) {
-            //     newName += chord[i + 1];
-            //     ++i; // Skip the digit in the next iteration
-            // }
-        } else {
-            // Otherwise, just add the character as is
-            newName += chord[i];
-        }
+    string newName;
+    for (char ch : chord) {
+        if (changeNaming.count(ch)) newName += changeNaming[ch];
+        else newName += ch;
     }
     return newName;
 }
+
+// --- Main Function --- //
+
 int main(int argc, char* argv[]) {
     if (argc != 2) {
-        cerr << "ERROR: There should be just one input file." << endl; 
-        exit(1);
+        cerr << "ERROR: Exactly one input file expected." << endl;
+        return 1;
     }
-    // Open the input file
-    ifstream inputFile(argv[1]); 
-  
-    // Check if the file is successfully opened 
-    if (!inputFile.is_open()) { 
-        cerr << "Error opening your file!" << endl; 
-        return 1; 
-    } 
 
-    string line, input;
+    ifstream inputFile(argv[1]);
+    if (!inputFile.is_open()) {
+        cerr << "ERROR: Could not open input file." << endl;
+        return 1;
+    }
+
+    // Read file contents in reverse for correct output order
+    string input, line;
     while (getline(inputFile, line)) {
-        input = line + '\n' + input; 
-        // we do it in reverse so the output file is ordered
+        input = line + '\n' + input;
     }
 
-    char delim = '\n';
-    // Split the input into lines
-    vector<std::string> lines = split(input, delim);
-
-    // Map to store sections with their measures
-    unordered_map<string, vector<vector<string>>> sections; // vector of vector of strings :((
+    vector<string> lines = split(input, '\n');
+    unordered_map<string, vector<vector<string>>> sections;
 
     for (const auto& line : lines) {
         if (line.empty()) continue;
 
-        // Split line into section name and chords
         size_t colonPos = line.find(':');
-        string section = line.substr(0, colonPos);
-        string chords = line.substr(colonPos + 1);
+        if (colonPos == string::npos) continue;
 
-        // Remove leading and trailing bars and spaces
-        chords = trim(chords);
+        string section = line.substr(0, colonPos);
+        string chords = trim(line.substr(colonPos + 1));
+
         if (chords.front() == '|') chords = chords.substr(1);
         if (chords.back() == '|') chords.pop_back();
 
-        // Split the chords by measures
-        vector<std::string> measures = split(chords, '|');
-        vector<std::vector<std::string>> parsedMeasures;
+        vector<string> measures = split(chords, '|');
+        vector<vector<string>> parsedMeasures;
 
         for (const auto& measure : measures) {
-            // Parse each measure into exactly 4 beats
-            vector<string> beats = parseMeasure(measure);
-
-            // Skip empty measures
-            if (!isEmptyMeasure(beats)) {
-                parsedMeasures.push_back(beats);
-            }
+            auto beats = parseMeasure(measure);
+            if (!isEmptyMeasure(beats)) parsedMeasures.push_back(beats);
         }
 
         if (!parsedMeasures.empty()) {
@@ -186,27 +147,25 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Output the sections in a format that a Python file can read
-    // get name of the original file
-    string getName = argv[1];
-    getName = getName.substr(0, getName.find(".txt"));
-    ofstream outputFile;
-    outputFile.open(getName + "_parsed.txt");
+    // Output results
+    string outputFilename = string(argv[1]).substr(0, string(argv[1]).find(".txt")) + "_parsed.txt";
+    ofstream outputFile(outputFilename);
+
     for (const auto& section : sections) {
         outputFile << section.first << "\n";
         for (const auto& measure : section.second) {
             outputFile << "[";
             for (size_t i = 0; i < measure.size(); ++i) {
-                outputFile <<  changeChordNaming(measure[i]);
+                outputFile << changeChordNaming(measure[i]);
                 if (i != measure.size() - 1) outputFile << ", ";
             }
             outputFile << "], ";
         }
         outputFile << "\n";
     }
-    
+
     outputFile.close();
 
-    cout << "Success!\n";
+    cout << "Success! Output written to " << outputFilename << endl;
     return 0;
 }
