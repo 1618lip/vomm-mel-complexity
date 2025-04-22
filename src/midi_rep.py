@@ -2,56 +2,110 @@ import sys
 from music21 import converter, note
 
 def partition_measure(measure):
-    # Implement partition logic if needed
+    """
+    Partition a measure into sections.
+    Currently returns the full measure as a single partition.
+    
+    Parameters:
+    measure (music21.stream.Measure): The measure to partition.
+
+    Returns:
+    List of (start_offset, end_offset) tuples.
+    """
     return [(0, measure.duration.quarterLength)]
 
 def extract_elements_in_range(measure, start_offset, end_offset):
-    # Extract elements within the given offset range
+    """
+    Extracts elements within a specific offset range from a measure.
+
+    Parameters:
+    measure (music21.stream.Measure): The measure to extract from.
+    start_offset (float): Starting offset.
+    end_offset (float): Ending offset.
+
+    Returns:
+    List of music21 elements within the range.
+    """
     elements = []
     for el in measure.elements:
-        if el.offset >= start_offset and el.offset < end_offset:
+        if start_offset <= el.offset < end_offset:
             elements.append(el)
     return elements
 
-def map_to_piano_range(value):
+def map_to_piano_range(midi_value):
     """
-    Maps a value from the range 21-108 to the range 10-97.
+    Maps a MIDI value from 21-108 to 11-98 (internally shifted by 10).
 
     Parameters:
-    value (int): The value to be mapped.
+    midi_value (int): The MIDI note number.
 
     Returns:
-    int: The mapped value in the new range.
+    int: The mapped MIDI value.
     """
-    if value < 21 or value > 108:
-        raise ValueError("Value should be between 10 and 97")
-    return value - 10
+    if midi_value < 21 or midi_value > 108:
+        raise ValueError("MIDI value should be between 21 and 108.")
+    return midi_value - 10
+    
+def note_duration_to_units(duration):
+    """
+    Converts a note duration (in quarter lengths) to units.
 
-file_path = str(sys.argv[1])
-score = converter.parse(file_path)
+    1 quarter note = 12 units.
 
-# Extract notes and partition measure
-part = (score.parts)[0]
-melody = ""
-for measure in part.getElementsByClass('Measure'):
-    measure_number = measure.measureNumber
+    Parameters:
+    duration (float): Note duration in quarter lengths.
+
+    Returns:
+    int: Duration in units.
+    """
+    return int(duration * 12)
+
+def process_measure(measure):
+    """
+    Processes a measure and converts its notes/rests into custom string format.
+
+    Parameters:
+    measure (music21.stream.Measure): The measure to process.
+
+    Returns:
+    str: Encoded melody segment for the measure.
+    """
+    melody_segment = ""
     partitions = partition_measure(measure)
-    for i, (start_offset, end_offset) in enumerate(partitions):
+
+    for start_offset, end_offset in partitions:
         section_elements = extract_elements_in_range(measure, start_offset, end_offset)
-        
+
         for el in section_elements:
             if isinstance(el, note.Note):
-                midi_number = el.pitch.midi
-                melody += str(map_to_piano_range(midi_number))+":"+str(int(el.quarterLength*12))+":"
+                midi_number = map_to_piano_range(el.pitch.midi)
+                duration_units = note_duration_to_units(el.quarterLength)
+                melody_segment += f"{midi_number}:{duration_units}:"
             elif isinstance(el, note.Rest):
-                # Rest is denoted as 10. 
-                melody += "10:"+str(int(el.quarterLength*12))+":" 
+                duration_units = note_duration_to_units(el.quarterLength)
+                melody_segment += f"10:{duration_units}:"  # 10 is reserved for rests
+
+    return melody_segment
 
 
-output_file = r""+sys.argv[1]
-f = open(output_file[:len(output_file)-4]+"_MIDI_representation.txt", "w")
-f.write(melody)
+"""
+Process!!! 
+"""
+file_path = sys.argv[1]
+score = converter.parse(file_path)
+part = score.parts[0]  # Process only the first part
+
+full_melody = ""
+for measure in part.getElementsByClass('Measure'):
+    full_melody += process_measure(measure)
+
+# Save to output file
+output_file = file_path[:-4] + "_MIDI_representation.txt"
+with open(output_file, "w") as f:
+    f.write(full_melody)
 f.close()
+print(f"Melody representation saved to {output_file}")
+
 
 """
 | Note Type                  | Value |
