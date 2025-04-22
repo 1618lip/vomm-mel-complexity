@@ -170,6 +170,8 @@ def compute_ppm(counts, training_data, D):
                 probs[context][sigma] = 1 / len(alphabet)
 
     return probs
+
+
 # sequence = sys.argv[2]
 # D = int(sys.argv[1])  # Set context size
 # counts = count_occurrences(sequence, D)
